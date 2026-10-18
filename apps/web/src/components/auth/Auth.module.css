@@ -103,8 +103,9 @@
 }
 
 .form {
+  --form-gap: 16px; /* also sizes the overlap of .messageSlot below, so change it here only */
   display: grid;
-  gap: 16px;
+  gap: var(--form-gap);
 }
 
 .field {
@@ -180,6 +181,38 @@
   background: #faf8f5;
   font: 600 15px/1 var(--font-body);
   color: #3a3a3a;
+}
+
+.icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  color: #6c737d;
+}
+
+.icon + input {
+  padding-left: 0;
+}
+
+/* One line of hint or error is always reserved so showing or clearing it never moves the fields below. The slot overlaps the gap
+   above the next field (negative bottom margin = the form gap minus the 6px field gap, so it can never reach the next field), which
+   makes the blank space it adds 14px, not a whole extra line. The "not available" notice is about 297px of text and the box is
+   (screen width - 66px) wide, so it wraps below about 363px; two lines are reserved up to 389px, which keeps at least 26px of slack
+   at the widest one-line screen. Measured: it wraps at 320, 340 and 360, and fits on one line from 375. */
+.messageSlot {
+  min-height: 18px;
+  margin-bottom: calc(6px - var(--form-gap));
+}
+
+.messageSlot > p {
+  line-height: 18px;
+}
+
+@media (max-width: 389px) {
+  .messageSlot {
+    min-height: 36px;
+  }
 }
 
 .prefix + input {
@@ -651,7 +684,7 @@
   color: #167b31;
 }
 
-/* a quiet secondary action under the main button, e.g. "Sign in with a mobile code instead" */
+/* a quiet secondary action under the main button, e.g. "Resend the code" */
 .altAction {
   appearance: none;
   min-height: 44px;

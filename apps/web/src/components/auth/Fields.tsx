@@ -10,15 +10,21 @@ type FieldProps = Omit<InputHTMLAttributes<HTMLInputElement>, "id"> & {
   label: string;
   error?: string;
   hint?: string;
+  /** Announce the hint as a status message (it appears while typing and is read out once). */
+  hintRole?: "status";
   /** Text shown at the left inside the box, e.g. the +91 of a phone number. */
   prefix?: string;
   /** Something to place at the right of the label. */
   labelAside?: ReactNode;
+  /** An icon shown at the left inside the box. */
+  icon?: ReactNode;
+  /** Keep room for a hint or error (one line, two on very narrow screens) so the layout does not jump when it appears. */
+  reserveMessage?: boolean;
 };
 
-export function TextField({ label, error, hint, prefix, labelAside, required, ...input }: FieldProps) {
+export function TextField({ label, error, hint, hintRole, prefix, labelAside, icon, reserveMessage, required, ...input }: FieldProps) {
   const id = useId();
-  const describedBy = [error ? `${id}-error` : "", hint ? `${id}-hint` : ""].filter(Boolean).join(" ") || undefined;
+  const describedBy = [error ? `${id}-error` : "", hint && !error ? `${id}-hint` : ""].filter(Boolean).join(" ") || undefined;
   return (
     <div className={styles.field}>
       <div className={styles.labelRow}>
@@ -26,11 +32,19 @@ export function TextField({ label, error, hint, prefix, labelAside, required, ..
         {labelAside}
       </div>
       <div className={`${styles.control} ${error ? styles.invalid : ""}`}>
+        {icon && <span className={styles.icon} aria-hidden="true">{icon}</span>}
         {prefix && <span className={styles.prefix} aria-hidden="true">{prefix}</span>}
         <input id={id} aria-required={required || undefined} aria-invalid={error ? true : undefined} aria-describedby={describedBy} {...input} />
       </div>
-      {hint && !error && <p className={styles.hint} id={`${id}-hint`}>{hint}</p>}
-      {error && <p className={styles.error} id={`${id}-error`} role="alert">{error}</p>}
+      {(() => {
+        const messages = (
+          <>
+            {hint && !error && <p className={styles.hint} id={`${id}-hint`} role={hintRole}>{hint}</p>}
+            {error && <p className={styles.error} id={`${id}-error`} role="alert">{error}</p>}
+          </>
+        );
+        return reserveMessage ? <div className={styles.messageSlot}>{messages}</div> : messages;
+      })()}
     </div>
   );
 }
@@ -38,7 +52,7 @@ export function TextField({ label, error, hint, prefix, labelAside, required, ..
 export function PasswordField({ label, error, hint, labelAside, required, ...input }: Omit<FieldProps, "prefix" | "type">) {
   const id = useId();
   const [shown, setShown] = useState(false);
-  const describedBy = [error ? `${id}-error` : "", hint ? `${id}-hint` : ""].filter(Boolean).join(" ") || undefined;
+  const describedBy = [error ? `${id}-error` : "", hint && !error ? `${id}-hint` : ""].filter(Boolean).join(" ") || undefined;
   return (
     <div className={styles.field}>
       <div className={styles.labelRow}>

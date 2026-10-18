@@ -3,11 +3,12 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import Link from "next/link";
+import { Mail, Smartphone } from "lucide-react";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { PasswordField, TextField } from "@/components/auth/Fields";
 import { GoogleButton } from "@/components/auth/GoogleButton";
 import { Welcome, describeError, useAuthFlow } from "@/components/auth/useAuthFlow";
-import { authClient, authMode, googleClientId, notConnectedMessage, validateEmail } from "@/lib/auth";
+import { authClient, authMode, detectIdentifierKind, googleClientId, mobileSignInUnavailable, notConnectedMessage, validateIdentifier } from "@/lib/auth";
 import styles from "@/components/auth/Auth.module.css";
 
 type Errors = Partial<Record<"email" | "password", string>>;
@@ -15,7 +16,8 @@ type Errors = Partial<Record<"email" | "password", string>>;
 /** Sign in with email and password, or continue with Google. */
 export function LoginView() {
   const { fromCheckout, welcome, finish, query } = useAuthFlow();
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(""); // the email address or mobile number, whichever the person types
+  const [touched, setTouched] = useState(false);
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<Errors>({});
   const [formError, setFormError] = useState("");
@@ -38,12 +40,22 @@ export function LoginView() {
     }
   };
 
+  const kind = detectIdentifierKind(email);
+  // The "not available" notice shows from the first digit or "+", and goes the moment a letter or "@" is typed. The keyboard is
+  // always the email one (it has digits, letters and "@"), so a digit-leading email can always be typed.
+  const isMobile = kind === "mobile";
+  // No email error while typing: it appears after leaving the box (or on submit). A mobile value only ever gets the notice.
+  const blurError = email.trim() && touched && !isMobile ? validateIdentifier(email) : "";
+
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const found: Errors = { email: validateEmail(email) || undefined, password: password ? undefined : "Enter your password." };
+    const form = event.currentTarget; // currentTarget is null once the handler returns, so keep the form for the animation frame
+    // Interim: the store signs in with email and password only. A mobile number is never sent to the server.
+    const idError = validateIdentifier(email); // for a mobile value this is the same "not available" notice
+    const found: Errors = { email: idError || undefined, password: password ? undefined : "Enter your password." };
     setErrors(found);
     if (found.email || found.password) {
-      requestAnimationFrame(() => event.currentTarget.querySelector<HTMLElement>("[aria-invalid=true]")?.focus());
+      requestAnimationFrame(() => form.querySelector<HTMLElement>("[aria-invalid=true]")?.focus());
       return;
     }
     void run(async () => finish(await authClient.signIn(email.trim().toLowerCase(), password)));
@@ -69,14 +81,22 @@ export function LoginView() {
             {formError && <p className={styles.alert} role="alert">{formError}</p>}
             {notice && <p className={styles.notice} role="status">{notice}</p>}
             <TextField
-              label="Email address"
-              type="email"
+              label={kind === "mobile" ? "Mobile number" : kind === "email" ? "Email address" : "Email or mobile number"}
+              type="text"
               value={email}
-              onChange={(event) => { setEmail(event.target.value); setErrors((current) => ({ ...current, email: undefined })); }}
+              onChange={(event) => { setEmail(event.target.value); setTouched(false); setErrors((current) => ({ ...current, email: undefined })); }}
+              onBlur={() => setTouched(true)}
               placeholder="you@example.com"
-              autoComplete="email"
+              autoComplete="username"
               inputMode="email"
-              error={errors.email}
+              autoCapitalize="none"
+              spellCheck={false}
+              data-kind={kind}
+              icon={kind === "mobile" ? <Smartphone size={18} data-icon="mobile" /> : <Mail size={18} data-icon="email" />}
+              hint={isMobile ? mobileSignInUnavailable : undefined}
+              hintRole="status"
+              reserveMessage
+              error={errors.email || blurError || undefined}
               required
             />
             <PasswordField

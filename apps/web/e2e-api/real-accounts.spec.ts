@@ -32,7 +32,7 @@ async function signUp(page: Page, person: Person, path = "/signup") {
 
 async function signIn(page: Page, person: Person, password = person.password) {
   await page.goto("/login");
-  await page.getByLabel("Email address").fill(person.email);
+  await page.getByLabel(/email/i).fill(person.email);
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Sign In", exact: true }).click();
 }

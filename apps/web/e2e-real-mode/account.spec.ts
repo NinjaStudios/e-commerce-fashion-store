@@ -40,11 +40,27 @@ test.describe("account pages with real accounts", () => {
       await expect(page.getByRole("heading", { name: "Welcome back", level: 1 })).toBeVisible();
     }
 
-    await page.getByLabel("Email address").fill("meera@example.com");
+    await page.getByLabel(/email/i).fill("meera@example.com");
     await page.getByLabel("Password", { exact: true }).fill("Saree2026");
     await page.getByRole("button", { name: "Sign In", exact: true }).click();
     await expect(page).toHaveURL(/\/account\/orders$/);
     await expect(page.getByRole("heading", { name: "My Orders", level: 1 })).toBeVisible();
+  });
+
+  test("a mobile number typed into sign-in never reaches the login API", async ({ page }) => {
+    await fakeApi(page, { signedIn: false });
+    const loginCalls: string[] = [];
+    page.on("request", (request) => {
+      if (request.url().includes("/auth/login")) loginCalls.push(`${request.method()} ${request.url()}`);
+    });
+    await page.goto("/login");
+    await page.getByLabel("Email or mobile number").fill("98765 43210");
+    await page.getByLabel("Password", { exact: true }).fill("Saree2026");
+    await page.getByRole("button", { name: "Sign In", exact: true }).click();
+    await expect(page.getByText("Mobile sign-in isn't available yet — use your email")).toBeVisible();
+    await page.waitForTimeout(300);
+    expect(loginCalls).toEqual([]);
+    await expect(page).toHaveURL(/\/login$/);
   });
 
   test("a signed-out visitor never sees sample data or loads anyone's addresses", async ({ page }) => {

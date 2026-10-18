@@ -11,6 +11,33 @@ export const validateEmail = (value: string) => {
   return "";
 };
 
+// ---- the sign-in box takes an email address or an Indian mobile number ---------------------------------------------------
+// Interim: the store API signs in with email and password only, so a mobile number is recognised here but never sent anywhere.
+
+export type IdentifierKind = "empty" | "email" | "mobile";
+
+/**
+ * A mobile number only when there is no "@" and every character is one a phone number uses (digits, "+", spaces, dashes,
+ * brackets) with at least one digit, or just "+". Any letter or other character means an email address being typed.
+ */
+export const detectIdentifierKind = (value: string): IdentifierKind => {
+  const text = value.trim();
+  if (!text) return "empty";
+  if (text.includes("@")) return "email";
+  return /^\+?[\d\s\-()]*$/.test(text) && (text === "+" || /\d/.test(text)) ? "mobile" : "email";
+};
+
+export const mobileSignInUnavailable = "Mobile sign-in isn't available yet — use your email";
+
+/** Returns what is wrong with the email or mobile number, or "" when it is fine. */
+export const validateIdentifier = (value: string) => {
+  const kind = detectIdentifierKind(value);
+  if (kind === "empty") return "Enter your email address or mobile number.";
+  if (kind === "mobile") return mobileSignInUnavailable; // no format messages: a mobile number cannot sign in yet
+  const message = validateEmail(value);
+  return message.startsWith("Enter a valid email address") ? "Enter a valid email, like name@example.com." : message;
+};
+
 export const validateName = (value: string) => {
   const name = value.trim();
   if (!name) return "Enter your full name.";

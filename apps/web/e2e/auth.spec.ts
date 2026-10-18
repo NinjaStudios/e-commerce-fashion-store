@@ -20,19 +20,18 @@ async function signUp(page: Page, person: Person, path = "/signup") {
 
 async function signIn(page: Page, email: string, password: string) {
   await page.goto("/login");
-  await page.getByLabel("Email address").fill(email);
+  await page.getByLabel(/email/i).fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Sign In", exact: true }).click();
 }
 
 test.describe("sign in", () => {
-  test("offers Google, email and password, and a reset link, with no mobile number", async ({ page }) => {
+  test("offers Google, an email or mobile box and password, and a reset link", async ({ page }) => {
     await page.goto("/login");
     await expect(page.getByRole("heading", { name: "Welcome back", level: 1 })).toBeVisible();
     await expect(page.getByRole("button", { name: "Sign in with Google" })).toBeVisible();
-    await expect(page.getByLabel("Email address")).toBeVisible();
+    await expect(page.getByLabel("Email or mobile number")).toBeVisible();
     await expect(page.getByLabel("Password", { exact: true })).toBeVisible();
-    await expect(page.getByLabel(/mobile/i)).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Forgot password?" })).toHaveAttribute("href", "/forgot-password");
     await expect(page.getByRole("link", { name: "Create an account" })).toHaveAttribute("href", "/signup");
   });
@@ -41,12 +40,12 @@ test.describe("sign in", () => {
     await page.goto("/login");
     await page.getByRole("button", { name: "Sign In", exact: true }).click();
     await expect(page.locator("form").getByRole("alert")).toHaveCount(2);
-    await expect(page.getByText("Enter your email address.")).toBeVisible();
+    await expect(page.getByText("Enter your email address or mobile number.")).toBeVisible();
     await expect(page.getByText("Enter your password.")).toBeVisible();
-    await page.getByLabel("Email address").fill("not-an-email@");
+    await page.getByLabel(/email/i).fill("not-an-email@");
     await page.getByLabel("Password", { exact: true }).fill("x");
     await page.getByRole("button", { name: "Sign In", exact: true }).click();
-    await expect(page.getByText("Enter a valid email address, like name@example.com.")).toBeVisible();
+    await expect(page.getByText("Enter a valid email, like name@example.com.")).toBeVisible();
   });
 
   test("the eye button shows and hides the password", async ({ page }) => {
