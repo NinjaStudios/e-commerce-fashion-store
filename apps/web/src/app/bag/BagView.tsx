@@ -10,11 +10,9 @@ import { WhyPratyangi } from "@/components/sections/WhyPratyangi/WhyPratyangi";
 import { ProductCard } from "@/components/ui/ProductCard/ProductCard";
 import { useSession } from "@/lib/auth";
 import { useBag } from "@/lib/bag";
-import { coupons, freeShippingThreshold } from "@/lib/checkout";
+import { computeTotals, coupons, freeShippingThreshold, standardShippingFee } from "@/lib/checkout";
 import { discountPercent, findProduct, formatInr, homeProducts } from "@/lib/catalog";
 import styles from "./bag.module.css";
-
-const shippingFee = 99;
 
 export function BagView() {
   const bag = useBag();
@@ -30,9 +28,7 @@ export function BagView() {
     return product ? [{ ...line, product }] : [];
   });
   const subtotal = items.reduce((total, item) => total + item.product.priceInr * item.quantity, 0);
-  const discount = appliedCoupon ? Math.round(subtotal * coupons[appliedCoupon]) : 0;
-  const shipping = subtotal === 0 || subtotal >= freeShippingThreshold ? 0 : shippingFee;
-  const total = subtotal - discount + shipping;
+  const { discount, shipping, total } = computeTotals(subtotal, appliedCoupon ? coupons[appliedCoupon] : 0);
   const itemLabel = `${bag.count} ${bag.count === 1 ? "item" : "items"}`;
 
   const applyCoupon = (event: FormEvent<HTMLFormElement>) => {
@@ -51,11 +47,6 @@ export function BagView() {
     }
   };
 
-  const moveToWishlist = (id: string, name: string) => {
-    bag.remove(id);
-    setStatus(`${name} moved to your wishlist (local demo only).`);
-  };
-
   const addRecommended = (id: string) => {
     bag.add(id);
     setStatus("Added to your bag.");
@@ -64,7 +55,7 @@ export function BagView() {
   return (
     <main className={styles.page}>
       <div className={styles.announcement}>
-        <p>Free Shipping on Orders Above ₹1,999 &nbsp; | &nbsp; Easy Returns &nbsp; | &nbsp; Authentic Handlooms</p>
+        <p>Free Shipping on Orders Above ₹1,999 &nbsp; | &nbsp; Authentic Handlooms</p>
         <p className={styles.announcementLinks}>Track Order &nbsp; | &nbsp; Help &nbsp; | &nbsp; Store Locator</p>
       </div>
       <SiteHeader bagCount={bag.count} />
@@ -114,9 +105,9 @@ export function BagView() {
                       <button type="button" aria-label="Increase quantity" disabled={quantity >= bag.maxQuantity} onClick={() => bag.setQuantity(product.id, quantity + 1)}>+</button>
                     </div>
                     <div className={styles.secondary}>
-                      <button type="button" onClick={() => moveToWishlist(product.id, product.name)}>
+                      <button type="button" disabled title="Wishlist coming soon">
                         <Image src="/images/figma/wishlist-heart.svg" alt="" width={22} height={22} />
-                        Move to Wishlist
+                        Move to Wishlist (coming soon)
                       </button>
                       <button type="button" onClick={() => bag.remove(product.id)}>
                         <Image src="/images/figma/trash.svg" alt="" width={19} height={19} />
@@ -141,7 +132,7 @@ export function BagView() {
                 <div><dt>Subtotal ({itemLabel})</dt><dd>{formatInr(subtotal)}</dd></div>
                 <div><dt>Discount{appliedCoupon ? ` (${appliedCoupon})` : ""}</dt><dd className={styles.positive}>- {formatInr(discount)}</dd></div>
                 <div>
-                  <dt>Shipping <span title={`Free shipping on orders above ${formatInr(freeShippingThreshold)}`}>ⓘ</span></dt>
+                  <dt>Shipping <span title={`Free shipping on orders above ${formatInr(freeShippingThreshold)}, otherwise ${formatInr(standardShippingFee)}`}>ⓘ</span></dt>
                   <dd className={styles.positive}>{shipping ? formatInr(shipping) : "FREE"}</dd>
                 </div>
               </dl>
@@ -159,8 +150,8 @@ export function BagView() {
                 </button>
               )}
               <div className={styles.assurance}>
-                <p className={styles.secure}><Image src="/images/figma/lock-keyhole.svg" alt="" width={18} height={18} />Secure Checkout</p>
-                <p>100% Secure Payments &nbsp; | &nbsp; Easy Returns<br />Order Tracking</p>
+                <p className={styles.secure}><Image src="/images/figma/lock-keyhole.svg" alt="" width={18} height={18} />Checkout</p>
+                <p>Online payment is not available yet &nbsp; | &nbsp; No payment is taken</p>
               </div>
             </div>
 

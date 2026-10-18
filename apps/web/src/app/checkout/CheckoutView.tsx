@@ -14,7 +14,7 @@ import { apiRoot, authMode, useSession } from "@/lib/auth";
 import { createApiAddressBook, createMemoryAddressBook, type AddressDraft } from "@/lib/addressBook";
 import { useBag } from "@/lib/bag";
 import { findProduct, formatInr } from "@/lib/catalog";
-import { addressLines, coupons, deliveryOptions, demoAddresses, type SavedAddress } from "@/lib/checkout";
+import { addressLines, computeTotals, coupons, deliveryOptions, demoAddresses, type SavedAddress } from "@/lib/checkout";
 import { easeOutExpo } from "@/lib/motion/presets";
 import styles from "./checkout.module.css";
 
@@ -58,12 +58,7 @@ export function CheckoutView() {
   });
   const itemCount = items.reduce((total, item) => total + item.quantity, 0);
   const subtotal = items.reduce((total, item) => total + item.product.priceInr * item.quantity, 0);
-  const discount = appliedCoupon ? Math.round(subtotal * coupons[appliedCoupon]) : 0;
-  const standardFee = 0;
-  const expressFee = deliveryOptions.find((option) => option.id === "express")?.fee ?? 99;
-  const feeFor = (id: string) => (id === "express" ? expressFee : standardFee);
-  const shipping = subtotal === 0 ? 0 : feeFor(deliveryId);
-  const total = subtotal - discount + shipping;
+  const { discount, shipping, total } = computeTotals(subtotal, appliedCoupon ? coupons[appliedCoupon] : 0, deliveryId);
   const itemLabel = `${itemCount} ${itemCount === 1 ? "item" : "items"}`;
 
   const applyCoupon = (event: FormEvent<HTMLFormElement>) => {
@@ -150,7 +145,7 @@ export function CheckoutView() {
     } else if (step === 2) {
       goTo(3);
     } else {
-      setStatus("Placing orders is not available in this local demo — no order or payment was created.");
+      setStatus("Placing orders is not available yet — no order was created and no payment was taken.");
     }
   };
 
@@ -163,8 +158,8 @@ export function CheckoutView() {
   return (
     <main className={styles.page}>
       <div className={styles.announcement}>
-        <p>Free Shipping on Orders Above ₹1,999 &nbsp; | &nbsp; Easy Returns &nbsp; | &nbsp; Authentic Handlooms</p>
-        <p className={styles.announcementLinks}>Track Order &nbsp; | &nbsp; Help &nbsp; | &nbsp; Store Locator</p>
+        <p>Free Shipping on Orders Above ₹1,999 &nbsp; | &nbsp; Authentic Handlooms</p>
+        <p className={styles.announcementLinks}>Help &nbsp; | &nbsp; Store Locator</p>
       </div>
       <SiteHeader bagCount={bag.count} />
 
@@ -248,7 +243,7 @@ export function CheckoutView() {
               </div>
               <div className={styles.deliveryChoices} role="radiogroup" aria-label="Delivery options">
                 {deliveryOptions.map((option) => {
-                  const fee = subtotal === 0 ? 0 : feeFor(option.id);
+                  const fee = computeTotals(subtotal, 0, option.id).shipping;
                   return (
                     <label key={option.id} className={`${styles.deliveryChoice} ${option.id === deliveryId ? styles.selectedDelivery : ""}`}>
                       <input type="radio" name="delivery" checked={option.id === deliveryId} onChange={() => setDeliveryId(option.id)} />
@@ -379,7 +374,7 @@ export function CheckoutView() {
               <dl>
                 <div><dt>Subtotal ({itemLabel})</dt><dd>{formatInr(subtotal)}</dd></div>
                 <div>
-                  <dt>Shipping Charges <Info size={14} aria-label={`Standard delivery is always free`} /></dt>
+                  <dt>Shipping Charges <Info size={14} aria-label="Standard delivery is free on orders above ₹1,999, otherwise ₹99" /></dt>
                   <dd className={shipping ? undefined : styles.positive}>{shipping ? formatInr(shipping) : "FREE"}</dd>
                 </div>
                 {appliedCoupon && <div><dt>Discount ({appliedCoupon})</dt><dd className={styles.positive}>- {formatInr(discount)}</dd></div>}
@@ -401,9 +396,7 @@ export function CheckoutView() {
               <ArrowRight size={24} aria-hidden="true" />
             </button>
             <p className={styles.assurance}>
-              <span><ShieldCheck size={17} aria-hidden="true" /> 100% Secure Payments</span>
-              <span aria-hidden="true" className={styles.divider} />
-              <span>Easy Returns within 7 days</span>
+              <span><ShieldCheck size={17} aria-hidden="true" /> Payment is not available yet — no payment is taken</span>
             </p>
           </motion.aside>
         </div>

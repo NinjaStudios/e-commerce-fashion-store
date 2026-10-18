@@ -1,16 +1,39 @@
 /** Prices and demo data shared by the bag and checkout pages. Everything here is local demo data (no backend yet). */
 
 export const freeShippingThreshold = 1999;
+/** Extra charge for express delivery (see shippingFor). */
 export const expressDeliveryFee = 99;
 
-/** Coupon code -> share of the subtotal taken off. */
+/** Coupon code -> share of the subtotal taken off. Demo-only data: no coupon service is connected yet. */
 export const coupons: Record<string, number> = { FIRST20: 0.2, WELCOME10: 0.1 };
 
-export type DeliveryOption = { id: "standard" | "express"; name: string; fee: number; window: string; note: string };
+/** Flat charge for standard delivery on orders at or under the free-shipping threshold. */
+export const standardShippingFee = 99;
+
+/**
+ * The one shipping rule, used by the bag and by checkout: standard delivery is free when the merchandise subtotal
+ * (before any coupon, as the bag always did) is over the threshold - strictly more than 1,999 - otherwise it is 99.
+ * Express delivery adds its own fee on top of that. An empty bag ships nothing, so it costs nothing.
+ */
+export function shippingFor(subtotal: number, delivery: "standard" | "express" = "standard") {
+  if (subtotal <= 0) return 0;
+  const standard = subtotal > freeShippingThreshold ? 0 : standardShippingFee;
+  // Express pricing for subtotals at or under 1,999 is pending owner approval (currently standard charge + the express fee).
+  return delivery === "express" ? standard + expressDeliveryFee : standard;
+}
+
+/** Subtotal, coupon discount, shipping and the amount to pay. `couponRate` is the coupon's share off (0 for none). */
+export function computeTotals(subtotal: number, couponRate = 0, delivery: "standard" | "express" = "standard") {
+  const discount = Math.round(subtotal * couponRate);
+  const shipping = shippingFor(subtotal, delivery);
+  return { subtotal, discount, shipping, total: subtotal - discount + shipping };
+}
+
+export type DeliveryOption = { id: "standard" | "express"; name: string; window: string; note: string };
 
 export const deliveryOptions: DeliveryOption[] = [
-  { id: "standard", name: "Standard Delivery", fee: 0, window: "4 - 6 business days", note: "Reliable and safe delivery" },
-  { id: "express", name: "Express Delivery", fee: expressDeliveryFee, window: "2 - 3 business days", note: "Faster delivery" },
+  { id: "standard", name: "Standard Delivery",window: "4 - 6 business days", note: "Reliable and safe delivery" },
+  { id: "express", name: "Express Delivery",window: "2 - 3 business days", note: "Faster delivery" },
 ];
 
 export type AddressType = "Home" | "Office" | "Other";

@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { computeTotals, shippingFor } from "../src/lib/checkout";
 
 test.describe("Shop menu", () => {
   test("opens with the Women / Men / Jewellery columns and the icon turns into a cross", async ({ page }) => {
@@ -232,12 +233,70 @@ test.describe("checkout", () => {
     await page.getByRole("button", { name: /Review Order/ }).click();
 
     await page.getByRole("button", { name: /Place Order/ }).click();
-    await expect(page.getByRole("status").filter({ hasText: "not available in this local demo" })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: "Placing orders is not available yet" })).toBeVisible();
   });
 
-  test("standard delivery is free, as in the design", async ({ page }) => {
+  test("standard delivery is free on the demo bag, which is over the free-shipping threshold", async ({ page }) => {
     await page.goto("/checkout");
     await expect(page.getByRole("radio", { name: /Standard Delivery/ })).toBeChecked();
     await expect(page.locator("[class*=prices]").getByText("FREE")).toBeVisible();
+  });
+
+  test("the bag and checkout show the same free shipping and the same total", async ({ page }) => {
+    const totalOf = async () => (await page.locator("[class*=total] strong").first().innerText()).trim();
+    await page.goto("/bag");
+    await expect(page.getByRole("heading", { name: /Your Bag/ })).toBeVisible();
+    await expect(page.getByText("FREE", { exact: true })).toBeVisible();
+    await expect.poll(totalOf).not.toBe("₹0");
+    const bagTotal = await totalOf();
+
+    await page.getByRole("link", { name: /Proceed to Checkout/ }).click();
+    await expect(page).toHaveURL(/\/checkout/);
+    await expect(page.locator("[class*=prices]").getByText("FREE")).toBeVisible();
+    await expect.poll(totalOf).toBe(bagTotal);
+  });
+
+  test("shipping is 99 up to and including 1,999 and free only above it", () => {
+    expect(shippingFor(1998)).toBe(99);
+    expect(shippingFor(1999)).toBe(99);
+    expect(shippingFor(2000)).toBe(0);
+    expect(shippingFor(0)).toBe(0);
+    expect(shippingFor(1999, "express")).toBe(198);
+    expect(shippingFor(2000, "express")).toBe(99);
+    // the same helper feeds the bag and checkout totals
+    expect(computeTotals(1999)).toEqual({ subtotal: 1999, discount: 0, shipping: 99, total: 2098 });
+    expect(computeTotals(2000, 0.1)).toEqual({ subtotal: 2000, discount: 200, shipping: 0, total: 1800 });
+  });
+
+  test("Move to Wishlist is unavailable and does not remove the item from the bag", async ({ page }) => {
+    await page.goto("/bag");
+    const wishlist = page.getByRole("button", { name: /Move to Wishlist/ });
+    await expect(wishlist.first()).toBeVisible();
+    const lines = await wishlist.count();
+    expect(lines).toBeGreaterThan(0);
+    for (let index = 0; index < lines; index += 1) {
+      await expect(wishlist.nth(index)).toBeDisabled();
+      await expect(wishlist.nth(index)).toHaveAttribute("title", "Wishlist coming soon");
+      await expect(wishlist.nth(index)).toContainText("coming soon");
+    }
+    await wishlist.first().click({ force: true });
+    await expect(page.getByRole("button", { name: /Move to Wishlist/ })).toHaveCount(lines);
+    await expect(page.getByText(/moved to your wishlist/i)).toHaveCount(0);
+  });
+
+  test("payment copy is honest: no secure-payment claim, and it says payment is not available yet", async ({ page }) => {
+    await page.goto("/bag");
+    await expect(page.getByText("Online payment is not available yet")).toBeVisible();
+    // Sitewide sections (WhyPratyangi, footer) still carry separate payment wording; that is a known out-of-scope
+    // issue, so these checks use exact text that matches only the bag/checkout elements, not those sections.
+    await expect(page.getByText("100% Secure Payments", { exact: true })).toHaveCount(0);
+    await expect(page.getByText("Secure Checkout", { exact: true })).toHaveCount(0);
+    await expect(page.getByText("Easy Returns")).toHaveCount(0);
+
+    await page.goto("/checkout");
+    await expect(page.getByText("Payment is not available yet — no payment is taken")).toBeVisible();
+    await expect(page.getByText("100% Secure Payments", { exact: true })).toHaveCount(0);
+    await expect(page.getByText("Secure Checkout", { exact: true })).toHaveCount(0);
+    await expect(page.getByText("Easy Returns")).toHaveCount(0);
   });
 });

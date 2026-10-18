@@ -88,6 +88,17 @@ test.describe("account pages with real accounts", () => {
     await expect(page.getByRole("navigation", { name: "Order pages" })).toHaveCount(0);
   });
 
+  test("a new customer's bag starts empty, with none of the demo products", async ({ page }) => {
+    await fakeApi(page, { signedIn: true });
+    await page.goto("/bag");
+    await expect(page.getByRole("heading", { name: /Your Bag/ })).toContainText("0 items");
+    await expect(page.getByText("There are no sarees in your bag yet.")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Shop New Arrivals" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Remove" })).toHaveCount(0);
+    await expect(page.getByRole("group", { name: /^Quantity for/ })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /Proceed to Checkout/ })).toBeDisabled();
+  });
+
   test("a customer with no saved addresses sees 0", async ({ page }) => {
     await fakeApi(page, { signedIn: true, addresses: 0 });
     await page.goto("/account");

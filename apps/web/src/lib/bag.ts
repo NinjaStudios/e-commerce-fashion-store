@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { authMode } from "@/lib/auth";
 import { bagFeatured, findProduct } from "@/lib/catalog";
 
 export type BagLine = { id: string; quantity: number };
@@ -9,7 +10,8 @@ const bagStorageKey = "pratyangi-demo-bag";
 const bagEvent = "pratyangi-bag-change";
 const maxQuantity = 10;
 
-const seedBag: BagLine[] = bagFeatured.map((product) => ({ id: product.id, quantity: 1 }));
+// sample products are for the opt-in demo only: real (api) and unconnected (off) visitors start with an empty bag
+const seedBag: BagLine[] = authMode === "demo" ? bagFeatured.map((product) => ({ id: product.id, quantity: 1 })) : [];
 
 function parseBag(raw: string | null): BagLine[] | null {
   if (raw === null) return seedBag;
