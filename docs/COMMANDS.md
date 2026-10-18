@@ -96,8 +96,9 @@ More test suites (the first needs nothing extra; the other two need MySQL and th
 | `pnpm --filter pratyangi-web run test:e2e:api` | Browser tests against the **real API and MySQL**. Before running, set `DATABASE_URL` in your terminal to a test database whose name ends in `_test` and that already has its tables (`apps/api/README.md` has the details). |
 | `pnpm api:test` | Runs the **API's own tests**. Uses the database named in `apps/api/.env.test`. |
 
-**Warning:** the two commands that use MySQL **empty the tables** of the test database, and refuse to run unless its name
-ends in `_test`. Only run them against a test database, never one with real data.
+**Warning:** `pnpm api:test` **empties the tables** of the test database, and refuses to run unless its name ends in
+`_test`. `test:e2e:api` does not check the name itself and adds test accounts, so point it only at a throwaway database
+whose name ends in `_test` and that already has its tables. Never use a database with real data.
 
 **What the tests check:** every page loads with the right title, no broken pictures, no errors and no sideways scrolling;
 the Shop menu and search box work with the keyboard; "Add to cart" raises the bag count; the category carousel

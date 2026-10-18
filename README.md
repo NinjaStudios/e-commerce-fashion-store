@@ -134,9 +134,10 @@ There are four test suites:
 | API browser tests (`apps/web/e2e-api`): real API on port 4001 and web on port 3100 | `pnpm --filter pratyangi-web run test:e2e:api` | MySQL, and `DATABASE_URL` set in your shell to a migrated database whose name ends in `_test` |
 | API tests (`apps/api/test`, Vitest + Supertest) | `pnpm api:test` | MySQL and `apps/api/.env.test` |
 
-**Database warning:** the two MySQL suites empty the `shop_*` tables and refuse to run unless the database name ends in
-`_test`. Run them only against a throwaway test database, never real data. `pnpm api:test` applies the migrations
-to that database itself.
+**Database warning:** `pnpm api:test` empties the `shop_*` tables and refuses to run unless the database name ends in
+`_test`; it applies the migrations to that database itself. `test:e2e:api` does not check the name itself and adds test
+accounts, so point `DATABASE_URL` only at a throwaway database whose name ends in `_test` that already has the migrations
+applied. Never use real data with either suite.
 
 What the demo-mode suite checks:
 
@@ -255,7 +256,7 @@ navigation falls back to a normal page load.
 - **API fails at start-up or tests fail with a database or environment variable error** — `DATABASE_URL` (and the other API
   variables) are missing. Copy `apps/api/.env.example` to `.env` and `.env.test.example` to `.env.test`, fill them in,
   and make sure MySQL is running. For `test:e2e:api`, set `DATABASE_URL` in your shell.
-- **Tests refuse to run because the database name must end in `_test`** — this is a safety check, because the tests empty
-  the tables. Point `DATABASE_URL` at a separate test database whose name ends in `_test`.
+- **`pnpm api:test` refuses to run because the database name must end in `_test`** — this is a safety check, because
+  those tests empty the tables. Point `DATABASE_URL` at a separate test database whose name ends in `_test`.
 - **Changed a `NEXT_PUBLIC_*` variable but nothing changed** — they are baked in at build time. Restart `pnpm dev` or run `pnpm build` again.
 - **The folder cannot be renamed or deleted on Windows** — close editors and terminals that have it open, then retry.
