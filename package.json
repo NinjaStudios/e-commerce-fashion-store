@@ -1,0 +1,20 @@
+{
+  "name": "pratyangi-fashions",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
+    "dev": "pnpm --filter pratyangi-web run dev",
+    "build": "pnpm --filter pratyangi-web run build",
+    "preview": "pnpm --filter pratyangi-web run preview",
+    "typecheck": "pnpm --filter pratyangi-web run typecheck",
+    "test": "pnpm --filter pratyangi-web run test:e2e",
+    "api:dev": "pnpm --filter pratyangi-api run dev",
+    "api:migrate": "pnpm --filter pratyangi-api run migrate",
+    "api:migrate:dev": "pnpm --filter pratyangi-api run migrate:dev",
+    "api:test": "pnpm --filter pratyangi-api run test",
+    "api:typecheck": "pnpm --filter pratyangi-api run typecheck",
+    "test:ui": "pnpm --filter pratyangi-web run test:e2e:ui",
+    "test:headed": "pnpm --filter pratyangi-web run test:e2e:headed"
+  }
+}

@@ -1,0 +1,223 @@
+.section {
+  background: radial-gradient(120% 90% at 20% 0%, rgba(120, 78, 48, .55) 0%, rgba(120, 78, 48, 0) 60%),
+    linear-gradient(180deg, #3a271c 0%, #241812 55%, #140d0a 100%);
+  color: #f6efe3;
+  padding: 44px 0 52px 16px;
+}
+
+.inner {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 26px;
+  padding-right: 16px;
+}
+
+.eyebrow {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #e6d6b8;
+  font-size: 12px;
+  letter-spacing: .14em;
+}
+
+.eyebrow span {
+  width: 74px;
+  height: 1px;
+  background: currentColor;
+}
+
+.header h2 {
+  margin: 14px 0 0;
+  color: #fbf6ea;
+  font: 400 clamp(32px, 3.27vw, 47px)/1.12 var(--font-display);
+}
+
+.aside {
+  max-width: 480px;
+  margin: 0;
+  color: #e6d6b8;
+  line-height: 1.5;
+  font-size: 13px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding-right: 16px;
+  gap: 14px;
+}
+
+.card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, .22);
+  border-radius: 90px 90px 24px 24px;
+  background: #2a1f18;
+  isolation: isolate;
+  height: 420px;
+  transition: border-color 250ms ease;
+}
+
+.photo {
+  object-fit: cover;
+  object-position: center top;
+  z-index: -2;
+  transition: transform 600ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(180deg, rgba(20, 13, 10, .35) 0%, rgba(20, 13, 10, .15) 35%, rgba(20, 13, 10, .85) 100%);
+}
+
+/* Content sits in the lower part of the card, as in the Figma frame: icon, two-line title, Coming Soon, arrow. */
+.content {
+  position: absolute;
+  inset: 0;
+  padding: 0 16px 62px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  text-align: center;
+  padding-bottom: 44px;
+}
+
+.platform {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #2d1a10;
+  margin-bottom: 18px;
+}
+
+.content h3 {
+  margin: 0 0 16px;
+  color: #fbf6ea;
+  font: 400 24px/1.25 var(--font-body);
+  font-size: 20px;
+}
+
+.soon {
+  color: #f1e6d0;
+  font: 400 22px/1.1 var(--font-display);
+  opacity: .9;
+  font-size: 19px;
+}
+
+.arrow img {
+  transform: rotate(180deg);
+}
+
+.arrow {
+  margin-top: 28px;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, .85);
+  border-radius: 50%;
+  color: #fbf6ea;
+}
+
+.card:last-child {
+  grid-column: 1 / -1;
+  justify-self: center;
+  width: calc(50% - 7px);
+}
+
+/* Slightly taller than the card so the image can drift without exposing an edge. */
+.photoLayer {
+  position: absolute;
+  inset: -3% 0;
+  z-index: -2;
+  will-change: transform;
+}
+
+.photoLayer .photo {
+  z-index: auto;
+}
+
+@media (min-width: 761px) {
+  .section {
+    padding: 64px 5.5% 72px;
+  }
+
+  .header {
+    margin-bottom: 40px;
+    align-items: flex-end;
+    gap: 32px;
+    flex-direction: revert;
+    padding-right: revert;
+  }
+
+  .aside {
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  .grid {
+    gap: 18px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding-right: revert;
+  }
+
+  .card {
+    height: 500px;
+  }
+
+  .content {
+    padding: 0 16px 62px;
+  }
+
+  .platform {
+    margin-bottom: 30px;
+  }
+
+  .content h3 {
+    font: 400 24px/1.25 var(--font-body);
+  }
+
+  .soon {
+    font: 400 22px/1.1 var(--font-display);
+  }
+
+  .card:last-child {
+    grid-column: revert;
+    justify-self: revert;
+    width: revert;
+  }
+}
+
+@media (min-width: 1081px) {
+  .grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+@media (hover: hover) {
+  .card:hover .photo {
+    transform: scale(1.04);
+  }
+}
+
+@media (hover: hover) {
+  .card:hover {
+    border-color: rgba(255, 255, 255, .45);
+  }
+}

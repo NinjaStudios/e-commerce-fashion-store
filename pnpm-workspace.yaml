@@ -1,0 +1,14 @@
+﻿# pnpm workspace: every folder under apps/ is a package.
+packages:
+  - apps/*
+
+# Supply-chain safety: only install package versions that have been published for at least one day.
+minimumReleaseAge: 1440
+
+autoInstallPeers: false
+
+# Prisma downloads its database engine when it is installed; pnpm only runs install scripts for packages listed here.
+onlyBuiltDependencies:
+  - prisma
+  - "@prisma/client"
+  - "@prisma/engines"

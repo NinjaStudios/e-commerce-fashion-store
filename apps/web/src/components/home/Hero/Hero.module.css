@@ -1,0 +1,94 @@
+/* Phones: widen the stage so only the three central models show, with the centre model on the central podium. */
+.hero {
+  position: sticky;
+  top: var(--header-h, 82px);
+  z-index: 0;
+  width: 100%;
+  overflow: hidden;
+  background: #f2ede8;
+  isolation: isolate;
+  aspect-ratio: 1.3085;
+  min-height: 230px;
+}
+
+/* Dims as the hero is covered (see Hero.tsx). */
+.stage {
+  position: absolute;
+  inset: 0;
+  top: 0;
+  right: auto;
+  bottom: auto;
+  left: -43%;
+  width: 186%;
+  height: auto;
+  aspect-ratio: 1440 / 591;
+}
+
+/*The 1440 x 591 artboard every layer is positioned in (percentages of it). It always fills the hero height, so wider
+   or narrower heroes crop the sides exactly as a background-size: cover picture would.*/
+.scene {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  aspect-ratio: 1440 / 591;
+  left: 0;
+  width: 100%;
+  transform: none;
+}
+
+.plate,
+.model img,
+.plinth img {
+  object-fit: fill;
+}
+
+/* The gold stand under a model: positioned in the model's own box (it is wider than the model), so it moves with it. */
+.plinth {
+  position: absolute;
+}
+
+/* Wrappers for the page-load entrance (the model and its stand rise together; the stage settles in). */
+.modelIntro,
+.plateIntro {
+  position: absolute;
+  inset: 0;
+}
+
+.model {
+  position: absolute;
+  will-change: transform, opacity;
+}
+
+@media (min-width: 381px) {
+  .hero {
+    min-height: 0;
+  }
+}
+
+@media (min-width: 561px) {
+  .stage {
+    inset: 0;
+    width: revert;
+    height: revert;
+    aspect-ratio: revert;
+  }
+
+  .scene {
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: revert;
+  }
+
+  .hero {
+    aspect-ratio: 1440 / 620;
+    min-height: clamp(200px, 43vw, 520px);
+  }
+}
+
+@media (min-width: 901px) {
+  .hero {
+    aspect-ratio: 1440 / 591;
+    min-height: clamp(220px, 41vw, 591px);
+  }
+}

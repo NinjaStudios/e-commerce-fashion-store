@@ -1,0 +1,146 @@
+import { expect, test } from "@playwright/test";
+import { fabrics } from "../src/lib/catalog";
+
+test.describe("search and menu open the catalogue filtered", () => {
+  for (const fabric of fabrics) {
+    test(`searching ${fabric} ticks it and lists only those sarees`, async ({ page }) => {
+      await page.goto("/");
+      await page.getByRole("button", { name: "Search catalog" }).click();
+      await page.getByRole("dialog").getByRole("link", { name: fabric, exact: true }).click();
+      await expect(page).toHaveURL(/new-arrivals\?fabric=/);
+
+      const box = page.getByRole("checkbox", { name: new RegExp(`^${fabric}`) });
+      await expect(box).toBeChecked();
+      // the count in the filter label is how many sarees of that fabric exist; the list header must say the same
+      const expected = Number((await box.locator("xpath=..").innerText()).match(/\((\d+)\)/)![1]);
+      await expect(page.getByText(new RegExp(`^${expected} Products?$`))).toBeVisible();
+      // and every other fabric is left unticked
+      await expect(page.locator("input[type=checkbox]:checked").filter({ has: page.locator("xpath=..") })).toHaveCount(1);
+    });
+  }
+
+  test("typing an everyday name finds the fabric (kanchipuram)", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Search catalog" }).click();
+    await page.locator("#catalog-search").fill("kanchipuram");
+    await page.getByRole("dialog").getByRole("link", { name: "Kanchi Pattu Saree" }).click();
+    await expect(page.getByRole("checkbox", { name: /^Kanchi Pattu Saree/ })).toBeChecked();
+  });
+
+  test("a Shop menu fabric link does the same, and plain New Arrivals clears it", async ({ page }) => {
+    await page.goto("/");
+    await page.locator("header").getByRole("button", { name: /Shop/ }).click();
+    await page.getByRole("navigation", { name: "Shop sections" }).getByRole("link", { name: "Banarasi" }).click();
+    await expect(page.getByRole("checkbox", { name: /^Banarasi Saree/ })).toBeChecked();
+    await page.getByRole("button", { name: "Search catalog" }).click();
+    await page.getByRole("dialog").getByRole("link", { name: "New Arrivals", exact: true }).click();
+    await expect(page.getByRole("checkbox", { name: /^Banarasi Saree/ })).not.toBeChecked();
+  });
+});
+
+test.describe("home page polish", () => {
+  test("both faces in the try-on slider meet exactly at the divider, same size, eyes level", async ({ page }) => {
+    await page.goto("/");
+    const slider = page.locator("#try-on [class*=compare]").first();
+    await slider.evaluate((element) => element.scrollIntoView({ block: "center" }));
+    await page.waitForTimeout(600);
+    const frame = (await slider.boundingBox())!;
+    const centre = frame.x + frame.width / 2;
+    // measured on the pictures: [middle of face, eye line, eye gap], as fractions of the picture
+    const point = async (index: number, face: [number, number, number]) => {
+      const box = (await slider.locator("img").nth(index).boundingBox())!;
+      return { x: box.x + box.width * face[0], y: box.y + box.height * face[1], gap: box.width * face[2] };
+    };
+    const result = await point(0, [0.478, 0.1367, 0.0646]);
+    const photo = await point(1, [0.5165, 0.139, 0.0707]);
+    expect(Math.abs(result.x - centre), "result face middle under the divider").toBeLessThan(1.5);
+    expect(Math.abs(photo.x - centre), "photo face middle under the divider").toBeLessThan(1.5);
+    expect(Math.abs(result.y - photo.y), "eyes on the same line").toBeLessThan(1.5);
+    expect(Math.abs(result.gap - photo.gap), "faces the same size").toBeLessThan(1.5);
+    // and the seam between the two pictures is the divider itself: the clipped half is as wide as the frame, clipped at 50%
+    const clip = page.locator("#try-on [class*=beforeClip]").first();
+    const clipBox = (await clip.boundingBox())!;
+    expect(Math.abs(clipBox.width - frame.width)).toBeLessThan(1);
+    expect(await clip.evaluate((element) => getComputedStyle(element).clipPath)).toContain("50%");
+  });
+
+  test("try-on access cards leave room between title, badge, text and button", async ({ page }) => {
+    await page.goto("/");
+    const card = page.locator("#try-on article").nth(1);
+    await card.evaluate((element) => element.scrollIntoView({ block: "center" }));
+    await page.waitForTimeout(900); // let the scroll-in animation finish before measuring
+    const gap = async (upper: string, lower: string) => {
+      const a = (await card.locator(upper).first().boundingBox())!;
+      const b = (await card.locator(lower).first().boundingBox())!;
+      return b.y - (a.y + a.height);
+    };
+    expect(await gap("h3", "[class*=badge]")).toBeGreaterThanOrEqual(10);
+    expect(await gap("[class*=badge]", "p")).toBeGreaterThanOrEqual(16);
+    expect(await gap("p", "button")).toBeGreaterThanOrEqual(16);
+  });
+
+  test("social icons keep their own proportions inside a 48px chip", async ({ page }) => {
+    await page.goto("/");
+    await page.locator("#socials").evaluate((element) => element.scrollIntoView());
+    await page.waitForTimeout(600);
+    const chips = page.locator("#socials [class*=platform]");
+    await expect(chips).toHaveCount(5);
+    for (let i = 0; i < 5; i++) {
+      const chip = (await chips.nth(i).boundingBox())!;
+      expect(Math.round(chip.width)).toBe(48);
+      const icon = chips.nth(i).locator("img");
+      await expect.poll(() => icon.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
+      const ratio = await icon.evaluate((image: HTMLImageElement) => [image.getBoundingClientRect().width / image.getBoundingClientRect().height, image.naturalWidth / image.naturalHeight]);
+      expect(Math.abs(ratio[0] - ratio[1]), `icon ${i} is not stretched`).toBeLessThan(0.02);
+    }
+  });
+
+  test("Join our world text and Why Pratyangi cards animate in as they are scrolled to", async ({ page }) => {
+    await page.goto("/");
+    const opacity = (selector: string) => page.locator(selector).first().evaluate((element) => Number(getComputedStyle(element).opacity));
+
+    // not yet scrolled to: still hidden
+    expect(await opacity("#join h2")).toBe(0);
+    await page.locator("#join h2").evaluate((element) => element.scrollIntoView({ block: "center" }));
+    await expect.poll(() => opacity("#join h2")).toBe(1);
+    await expect.poll(() => opacity("#join p")).toBe(1);
+
+    const why = page.locator("#why-pratyangi article").first();
+    await why.evaluate((element) => element.scrollIntoView({ block: "center" }));
+    await expect.poll(() => why.evaluate((element) => Number(getComputedStyle(element).opacity))).toBe(1);
+  });
+});
+
+test.describe("landing and scroll animation", () => {
+  test("the landing hero plays an entrance: models start hidden and rise into place", async ({ page }) => {
+    await page.goto("/", { waitUntil: "commit" });
+    const centre = page.locator('[data-hero-model="center"] > div').first();
+    await centre.waitFor({ state: "attached" });
+    // the entrance wrapper starts transparent...
+    const early = await centre.evaluate((element) => Number(getComputedStyle(element).opacity));
+    expect(early).toBeLessThan(1);
+    // ...and has fully arrived a couple of seconds later
+    await expect.poll(() => centre.evaluate((element) => Number(getComputedStyle(element).opacity)), { timeout: 6000 }).toBe(1);
+  });
+
+  test("sections animate again when scrolled back into view (up and down)", async ({ page }) => {
+    await page.goto("/");
+    const heading = page.getByRole("heading", { name: "Best Sellers", exact: true });
+    const opacity = () => heading.evaluate((element) => Number(getComputedStyle(element).opacity));
+    await heading.evaluate((element) => element.scrollIntoView({ block: "center" }));
+    await expect.poll(opacity).toBe(1);
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+    await expect.poll(opacity, { timeout: 6000 }).toBeLessThan(1); // eased back out while off screen
+    await heading.evaluate((element) => element.scrollIntoView({ block: "center" }));
+    await expect.poll(opacity, { timeout: 6000 }).toBe(1); // and eased in again
+  });
+
+  test("the footer, offers, socials and newsletter also animate in", async ({ page }) => {
+    await page.goto("/");
+    for (const selector of ["#exclusives article", "#socials article", "#newsletter h2", "footer [class*=footerColumn]"]) {
+      const element = page.locator(selector).first();
+      await element.evaluate((node) => node.scrollIntoView({ block: "center" }));
+      await expect.poll(() => element.evaluate((node) => Number(getComputedStyle(node).opacity)), { message: selector }).toBe(1);
+    }
+  });
+});

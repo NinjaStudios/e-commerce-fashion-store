@@ -1,0 +1,38 @@
+# dependencies
+node_modules
+
+# Next.js build output
+.next/
+out/
+next-env.d.ts
+
+# TypeScript
+*.tsbuildinfo
+
+# environment files (keep an .env.example if one is added)
+.env*
+!.env.example
+!.env.test.example
+
+# logs and coverage
+*.log
+npm-debug.log*
+/coverage
+
+# editors and OS
+/.idea
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+
+# local-only files
+.conversation/
+*.mp4
+
+# Playwright
+playwright-report/
+test-results/
+blob-report/
+/playwright/.cache/
